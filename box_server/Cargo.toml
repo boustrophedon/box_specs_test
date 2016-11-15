@@ -1,0 +1,10 @@
+[package]
+name = "box_server"
+version = "0.1.0"
+authors = ["Harry Stern <hcs@meow.sh>"]
+workspace = ".."
+
+[dependencies]
+specs = "0.7.0"
+time = "0.1"
+libbox = { version = "0.1.0", features = ["server"], path = "../libbox" }
