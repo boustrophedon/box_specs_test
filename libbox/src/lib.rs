@@ -1,7 +1,8 @@
 extern crate specs;
 extern crate time;
 #[cfg(feature = "client")]
-extern crate glium;
+#[macro_use] extern crate glium;
+extern crate nalgebra;
 
 mod common;
 #[cfg(feature = "client")]

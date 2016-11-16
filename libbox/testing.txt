@@ -1,0 +1,9 @@
+Testing in games is not super common, but I think it's just as doable as in other code.
+
+In a game we want to test that
+- Simulated input fires the proper events
+- Running a system N times on a given set of entities produces the correct values for components
+	- e.g. If we have an entity moving with speed X (at every frame!), then Y seconds later it should have traveled X*Y units
+- Maybe test some graphics code with glReadPixels and comparisons
+- Network code is "working" - for some definition of working, including testing low-latency conditions
+	- It would be nice to have an integration test that sends a message, gets a reply, and asserts that it is received on both ends

@@ -1,81 +1,110 @@
 use time::Duration;
 
 use specs;
-use specs::{System, RunArg};
-
 use glium;
 
 mod systems;
 use self::systems::*;
 
+use common::Message;
+use common::resources::*;
+use common::components::*;
+
+#[derive(Clone, Copy, Debug)]
+pub struct ClientConfig {
+    pub timestep: Duration,
+    pub window_width: u32,
+    pub window_height: u32,
+    pub fov: f32,
+    // data directories, etc
+}
+
+impl ClientConfig {
+    pub fn new() -> ClientConfig {
+        use std::f32::consts::FRAC_PI_4;
+        ClientConfig {
+            timestep: Duration::milliseconds(2),
+            window_width: 1280,
+            window_height: 720,
+            fov: FRAC_PI_4,
+        }
+    }
+}
 
 #[derive(Clone)]
-pub struct BClientContext {
-    pub message_queue: (),
+pub struct ClientSystemContext {
     pub dt: Duration,
 }
 
-impl BClientContext {
-    pub fn new(timestep: Duration) -> BClientContext {
-        BClientContext {
-            message_queue: (),
+impl ClientSystemContext {
+    pub fn new(timestep: Duration) -> ClientSystemContext {
+        ClientSystemContext {
             dt: timestep,
         }
     }
 }
 
-struct IsRunning(bool);
-
-pub fn make_world() -> specs::Planner<BClientContext> {
+pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSystemContext> {
     let mut world = specs::World::new();
-    let testsys = TestSystem::new("hello");
 
     world.add_resource(IsRunning(true));
+    world.add_resource(Camera::new(cfg));
 
-    let mut p = specs::Planner::new(world, 4);
-    p.add_system(testsys, "test", 1);
+    let p = specs::Planner::new(world, 4);
 
     p
 }
 
 pub struct ClientGame {
     input: InputSystem,
-    planner: specs::Planner<BClientContext>,
+    planner: specs::Planner<Message, ClientSystemContext>,
     render: RenderSystem,
     window: glium::Display,
+    ctx: ClientSystemContext,
     running: bool,
 }
 
 impl ClientGame {
-    pub fn new() -> ClientGame {
-        // probably read some config file here, pass config struct into the news
-        // or maybe just use the ctx
-
+    pub fn new(planner: specs::Planner<Message, ClientSystemContext>, cfg: ClientConfig) -> ClientGame {
         let input = InputSystem::new();
-        let render = RenderSystem::new();
-        let planner = make_world();
-        let window = RenderSystem::new_window();
+        let mut window = RenderSystem::new_window(cfg);
+        let render = RenderSystem::new(&mut window);
+
+        let ctx = ClientSystemContext::new(cfg.timestep);
+
         ClientGame {
             input: input,
             planner: planner,
             render: render,
             window: window,
+		    ctx: ctx,
             running: true,
         }
     }
 
-    pub fn run(&mut self, ctx: BClientContext) {
-        self.input.run(&mut self.window, self.planner.mut_world(), ctx.clone());
-        self.planner.dispatch(ctx.clone());
-        self.planner.wait();
-        self.render.run(&mut self.window, self.planner.mut_world(), ctx.clone());
-
-        if !self.planner.mut_world().read_resource::<IsRunning>().0 {
-            self.running = false;
-        }
+    pub fn get_input(&mut self) {
+        let msg = self.planner.message_out.clone();
+        let world = self.planner.mut_world();
+        self.input.run(&mut self.window, world, msg, self.ctx.clone());
     }
 
-    pub fn is_running(&mut self) -> bool {
+    pub fn run(&mut self) {
+        self.planner.dispatch(self.ctx.clone());
+        self.planner.handle_messages();
+
+        self.running = self.planner.mut_world().read_resource::<IsRunning>().0;
+    }
+
+    pub fn render(&mut self) {
+        let msg = self.planner.message_out.clone();
+        let world = self.planner.mut_world();
+        self.render.run(&mut self.window, world, msg, self.ctx.clone());
+    }
+
+    pub fn is_running(&self) -> bool {
         self.running
     }
 }
+
+#[cfg(test)]
+mod tests;

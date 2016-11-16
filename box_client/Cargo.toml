@@ -5,6 +5,6 @@ authors = ["Harry Stern <hcs@meow.sh>"]
 workspace = ".."
 
 [dependencies]
-specs = "0.7.0"
+specs = { version = "0.8", git = "https://github.com/boustrophedon/specs", branch = "message_passing" }
 time = "0.1"
 libbox = { version = "0.1.0", features = ["client"], path = "../libbox" }

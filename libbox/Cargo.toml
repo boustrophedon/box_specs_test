@@ -9,6 +9,7 @@ client = ["glium"]
 server = []
 
 [dependencies]
-specs = "0.7.0"
+nalgebra = "0.10"
+specs = { version = "0.8", git = "https://github.com/boustrophedon/specs", branch = "message_passing" }
 time = "0.1"
 glium = { version = "0.15.0", optional = true }
