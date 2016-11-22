@@ -47,8 +47,16 @@ impl ClientSystemContext {
 pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSystemContext> {
     let mut world = specs::World::new();
 
+    world.register::<Render>();
+
     world.add_resource(IsRunning(true));
     world.add_resource(Camera::new(cfg));
+
+    world.create_now().with(Render::new()).build();
+
+    use nalgebra::{Isometry3, Vector3, ToHomogeneous, zero};
+    let left_5 = Isometry3::new(Vector3::new(-5.0, 0.0, 0.0), zero());
+    world.create_now().with(Render::with_transform(left_5.to_homogeneous())).build();
 
     let p = specs::Planner::new(world, 4);
 

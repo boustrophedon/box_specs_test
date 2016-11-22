@@ -1,4 +1,4 @@
-use nalgebra::{Isometry3, Point3, Matrix4, PerspectiveMatrix3, ToHomogeneous, Transformation, Vector3, Vector4};
+use nalgebra::{Isometry3, Point3, Matrix4, PerspectiveMatrix3, ToHomogeneous, Vector3};
 
 use client::ClientConfig;
 

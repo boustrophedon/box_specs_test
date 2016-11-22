@@ -1,5 +1,4 @@
-use specs::World;
-use specs::MessageQueue;
+use specs::{Join, MessageQueue, World};
 
 use glium;
 use glium::{Display, DisplayBuild, Frame, Surface};
@@ -9,6 +8,8 @@ use client::ClientConfig;
 
 use common::Message;
 use common::resources::Camera;
+use common::components::Render;
+
 
 #[derive(Clone, Copy, Debug)]
 struct Vert {
@@ -45,12 +46,13 @@ impl BoxRenderer {
             #version 150
             
             uniform mat4 perspective;
-            uniform mat4 modelview;
+            uniform mat4 view;
+            uniform mat4 model;
 
             in vec3 position;
 
             void main() {
-                gl_Position = perspective * modelview * vec4(position, 1.0);
+                gl_Position = perspective * view * model * vec4(position, 1.0);
             }
         ";
         let f_shader = "
@@ -81,13 +83,14 @@ impl BoxRenderer {
 
     }
 
-    pub fn render(&self, frame: &mut Frame, camera: &Camera) {
+    pub fn render(&self, render: &Render, frame: &mut Frame, camera: &Camera) {
         // get transform, etc. probably from physics component actually
         // uv coords, texture ids, and model from render component in a generic "model renderer"
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
         let uniforms = uniform! {
             perspective: camera.perspective().as_ref().clone(),
-            modelview: camera.view().as_ref().clone(),
+            view: camera.view().as_ref().clone(),
+            model: render.model_transform.as_ref().clone(),
         };
         frame.draw(&self.box_vb, &indices, &self.box_shader, &uniforms, &self.box_drawparams).unwrap();
     }
@@ -95,7 +98,7 @@ impl BoxRenderer {
 }
 
 pub struct RenderSystem {
-    box_renderer: BoxRenderer,    
+    box_renderer: BoxRenderer, 
 }
 
 impl RenderSystem {
@@ -118,7 +121,9 @@ impl RenderSystem {
         let camera = world.read_resource::<Camera>();
         let mut frame = window.draw();
         frame.clear_color_and_depth((0.0, 1.0, 0.0, 1.0), 1.0);
-        self.box_renderer.render(&mut frame, &camera); // just draw a single box for now
+        for render in world.read::<Render>().iter() {
+            self.box_renderer.render(render, &mut frame, &camera);
+        }
         frame.finish().unwrap();
         window.swap_buffers().unwrap();
     }
