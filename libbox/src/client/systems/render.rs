@@ -8,7 +8,7 @@ use client::ClientConfig;
 
 use common::Message;
 use common::resources::Camera;
-use common::components::Render;
+use common::components::{Movement, Render};
 
 
 #[derive(Clone, Copy, Debug)]
@@ -119,11 +119,20 @@ impl RenderSystem {
 
     pub fn run(&mut self, window: &mut Display, world: &mut World, msg: MessageQueue<Message>, ctx: ClientSystemContext) {
         let camera = world.read_resource::<Camera>();
+
         let mut frame = window.draw();
         frame.clear_color_and_depth((0.0, 1.0, 0.0, 1.0), 1.0);
-        for render in world.read::<Render>().iter() {
-            self.box_renderer.render(render, &mut frame, &camera);
+
+        let movement = world.read::<Movement>();
+        let mut render = world.write::<Render>();
+        for (m, r) in (&movement, &mut render).iter() {
+            // maybe put this in a function
+            r.model_transform[(0, 3)] = m.position[0];
+            r.model_transform[(1, 3)] = m.position[1];
+            r.model_transform[(2, 3)] = m.position[2];
+            self.box_renderer.render(r, &mut frame, &camera);
         }
+
         frame.finish().unwrap();
     }
 }

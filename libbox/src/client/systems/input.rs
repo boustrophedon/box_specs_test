@@ -1,5 +1,3 @@
-use time;
-
 use specs::{World, MessageQueue};
 
 use glium;

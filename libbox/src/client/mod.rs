@@ -48,17 +48,20 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
     let mut world = specs::World::new();
 
     world.register::<Render>();
+    world.register::<Movement>();
 
     world.add_resource(IsRunning(true));
     world.add_resource(Camera::new(cfg));
 
-    world.create_now().with(Render::new()).build();
+    world.create_now().with(Render::new()).with(Movement::new()).build();
 
-    use nalgebra::{Isometry3, Vector3, ToHomogeneous, zero};
-    let left_5 = Isometry3::new(Vector3::new(-5.0, 0.0, 0.0), zero());
-    world.create_now().with(Render::with_transform(left_5.to_homogeneous())).build();
+    // start at +5, move to -5
+    use nalgebra::Point3;
+    let mvmnt = Movement::new_pos_target(Point3::new(5.0, 0.0, 0.0), Point3::new(-5.0, 0.0, 0.0));
+    world.create_now().with(Render::new()).with(mvmnt).build();
 
-    let p = specs::Planner::new(world, 4);
+    let mut p = specs::Planner::new(world, 4);
+    p.add_system(MovementSystem::new(), "movement", 1);
 
     p
 }
