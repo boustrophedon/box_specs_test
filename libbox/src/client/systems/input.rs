@@ -32,7 +32,6 @@ impl InputSystem {
                             KC::Escape => { 
                                 msg.send(Message::Quit);
                                 world.write_resource::<IsRunning>().0 = false;
-                                println!("{:?}", time::now());
                             },
                             _ => ()
                         }
