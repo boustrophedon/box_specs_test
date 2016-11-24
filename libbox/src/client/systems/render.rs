@@ -125,6 +125,5 @@ impl RenderSystem {
             self.box_renderer.render(render, &mut frame, &camera);
         }
         frame.finish().unwrap();
-        window.swap_buffers().unwrap();
     }
 }
