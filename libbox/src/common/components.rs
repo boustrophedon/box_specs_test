@@ -6,18 +6,22 @@ use specs::Component;
 #[derive(Clone, Copy, Debug)]
 pub struct Render {
     pub model_transform: Matrix4<f32>,
+    pub color: Vector3<f32>,
 }
 
 impl Render {
     pub fn new() -> Render {
         Render {
             model_transform: Matrix4::new_identity(4),
+            color: Vector3::new(0.0, 0.0, 0.0),
         }
     }
 
+    // should do a RenderBuilder in the future
     pub fn with_transform(model: Matrix4<f32>) -> Render {
         Render {
             model_transform: model,
+            color: Vector3::new(1.0, 1.0, 1.0),
         }
     }
 }
@@ -63,3 +67,22 @@ impl Component for Movement {
     type Storage = specs::VecStorage<Movement>;
 }
 
+
+#[derive(Clone, Copy, Debug)]
+pub struct Selection {
+    pub hovered: bool,
+    pub selected: bool,
+}
+
+impl Selection {
+    pub fn new() -> Selection {
+        Selection {
+            hovered: false,
+            selected: false,
+        }
+    }
+}
+
+impl Component for Selection {
+    type Storage = specs::VecStorage<Selection>;
+}

@@ -3,12 +3,14 @@ use specs::{Join, MessageQueue, World};
 use glium;
 use glium::{Display, DisplayBuild, Frame, Surface};
 
+use nalgebra::{Vector3};
+
 use client::ClientSystemContext;
 use client::ClientConfig;
 
 use common::Message;
 use common::resources::Camera;
-use common::components::{Movement, Render};
+use common::components::{Movement, Render, Selection};
 
 
 #[derive(Clone, Copy, Debug)]
@@ -58,8 +60,10 @@ impl BoxRenderer {
         let f_shader = "
             #version 150
 
+            uniform vec3 color;
+
             void main() {
-                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                gl_FragColor = vec4(color, 1.0);
             }
         ";
 
@@ -91,6 +95,7 @@ impl BoxRenderer {
             perspective: camera.perspective().as_ref().clone(),
             view: camera.view().as_ref().clone(),
             model: render.model_transform.as_ref().clone(),
+            color: render.color.as_ref().clone(),
         };
         frame.draw(&self.box_vb, &indices, &self.box_shader, &uniforms, &self.box_drawparams).unwrap();
     }
@@ -123,16 +128,29 @@ impl RenderSystem {
         let mut frame = window.draw();
         frame.clear_color_and_depth((0.0, 1.0, 0.0, 1.0), 1.0);
 
+        let entities = world.entities();
         let movement = world.read::<Movement>();
+        let selection = world.read::<Selection>();
         let mut render = world.write::<Render>();
-        for (m, r) in (&movement, &mut render).iter() {
-            // maybe put this in a function
-            r.model_transform[(0, 3)] = m.position[0];
-            r.model_transform[(1, 3)] = m.position[1];
-            r.model_transform[(2, 3)] = m.position[2];
+        for (e, m, r) in (&entities, &movement, &mut render).iter() {
+            update_model_transform(m, r);
+            match selection.get(e) {
+                Some(s) => {
+                    if s.selected { r.color = Vector3::new(1.0, 0.0, 0.0); }
+                    else if s.hovered { r.color = Vector3::new(0.0, 0.0, 1.0); }
+                    else { r.color = Vector3::new(0.0, 0.0, 0.0); }
+                }
+                None => ()
+            }
             self.box_renderer.render(r, &mut frame, &camera);
         }
 
         frame.finish().unwrap();
     }
+}
+
+fn update_model_transform(m: &Movement, r: &mut Render) {
+    r.model_transform[(0, 3)] = m.position[0];
+    r.model_transform[(1, 3)] = m.position[1];
+    r.model_transform[(2, 3)] = m.position[2];
 }

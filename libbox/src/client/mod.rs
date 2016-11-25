@@ -49,19 +49,24 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
 
     world.register::<Render>();
     world.register::<Movement>();
+    world.register::<Selection>();
 
-    world.add_resource(IsRunning(true));
-    world.add_resource(Camera::new(cfg));
-
-    world.create_now().with(Render::new()).with(Movement::new()).build();
+    let e1 = world.create_now().with(Render::new()).with(Movement::new()).with(Selection::new()).build();
+    println!("created entity e1: {:?}", e1);
 
     // start at +5, move to -5
     use nalgebra::Point3;
     let mvmnt = Movement::new_pos_target(Point3::new(5.0, 0.0, 0.0), Point3::new(-5.0, 0.0, 0.0));
-    world.create_now().with(Render::new()).with(mvmnt).build();
+    let e2 = world.create_now().with(Render::new()).with(mvmnt).with(Selection::new()).build();
+    println!("created entity e2: {:?}", e2);
+
+    world.add_resource(IsRunning(true));
+    world.add_resource(Camera::new(cfg));
+    world.add_resource(CurrentSelection(None));
 
     let mut p = specs::Planner::new(world, 4);
-    p.add_system(MovementSystem::new(), "movement", 1);
+    p.add_system(SelectionSystem::new(), "selection", 1);
+    p.add_system(MovementSystem::new(), "movement", 2);
 
     p
 }

@@ -1,9 +1,12 @@
+use specs::Entity;
+
 use nalgebra::{Isometry3, Point3, Matrix4, PerspectiveMatrix3, ToHomogeneous, Vector3};
 
 use client::ClientConfig;
 
 #[derive(Clone, Debug)]
 pub struct IsRunning(pub bool);
+
 
 #[derive(Clone, Debug)]
 pub struct Camera {
@@ -50,3 +53,7 @@ impl Camera {
         self.view = Isometry3::look_at_rh(&self.position, &self.target, &UP).to_homogeneous();
     }
 }
+
+
+#[derive(Clone, Debug)]
+pub struct CurrentSelection(pub Option<Entity>);

@@ -35,6 +35,8 @@ impl InputSystem {
                         }
                     }
                 }
+                Event::MouseMoved(x, y) => { msg.send(Message::MouseMoved(x, y)); }
+                Event::MouseInput(state, button) => { msg.send(Message::MouseInput(state, button)); }
                 _ => ()
             }
         }
