@@ -73,7 +73,7 @@ impl Camera {
         let mut v = Vector4::new((2.0*p.x as f32)/self.width - 1.0, (2.0*p.y as f32)/self.height - 1.0, 1.0, 1.0);
 
         // isometries always have inverses. perspective should as well, I think?
-        v = (self.view.inverse().unwrap().to_homogeneous() * self.persp.as_matrix().inverse().unwrap() * v).normalize();
+        v = (self.persp.as_matrix().inverse().unwrap() * self.view.inverse().unwrap().to_homogeneous() * v).normalize();
 
         Ray::new(self.position, nalgebra::from_homogeneous(&v))
     }
