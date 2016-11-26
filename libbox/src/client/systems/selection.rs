@@ -74,7 +74,7 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         // but I can't figure out how to pass this without writing
         // gigantic types in the signature
         let mut bp = ncollide::broad_phase::DBVTBroadPhase::new(0.05, true);
-        let square = Cuboid::new(Vector3::new(0.5f32, 0.5, 0.0));
+        let square = Cuboid::new(Vector3::new(1f32, 1.0, 0.0));
         for (e, m, s) in (&entities, &movement, &mut sel).iter() {
             // clear hover
             s.hovered = false;
@@ -87,14 +87,21 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         bp.update(&mut |a, b| *a != *b, &mut |_, _, _| { });
 
         //let selected = self.query_world(camera.deref());
-        //let ray = camera.ray_to_coords(self.last_pos);
-        let ray = ncollide::query::Ray::new(Point3::new(0.0f32, 0.0, 10.0), Vector3::new(0.0f32, 0.0, -1.0));
+        let ray = camera.ray_from_screen(self.last_pos);
+        if self.set_selection { println!("{:?}", ray); } 
+        //let ray = ncollide::query::Ray::new(Point3::new(0.0f32, 0.0, 10.0), Vector3::new(0.0f32, 0.0, -1.0));
         let mut hits = Vec::new();
         bp.interferences_with_ray(&ray, &mut hits);
 
         let selected = hits.first().cloned().cloned();
 
         if self.set_selection {
+            if curr_sel.0.is_some() {
+                match sel.get_mut(curr_sel.0.unwrap()) {
+                    Some(s) => s.selected = false,
+                    None => (),
+                }
+            }
             curr_sel.0 = selected;
         }
         match selected {
@@ -104,6 +111,10 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
                 if self.set_selection { selection.selected = true; }
             },
             None => ()
+        }
+
+        if self.set_selection {
+            self.set_selection = false;
         }
     }
 
