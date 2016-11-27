@@ -13,6 +13,7 @@ use common::components::*;
 #[derive(Clone, Copy, Debug)]
 pub struct ClientConfig {
     pub timestep: Duration,
+    pub sim_rate: Duration,
     pub window_width: u32,
     pub window_height: u32,
     pub fov: f32,
@@ -24,6 +25,7 @@ impl ClientConfig {
         use std::f32::consts::FRAC_PI_4;
         ClientConfig {
             timestep: Duration::milliseconds(2),
+            sim_rate: Duration::milliseconds(33),
             window_width: 1280,
             window_height: 720,
             fov: FRAC_PI_4,

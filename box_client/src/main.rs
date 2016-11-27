@@ -6,6 +6,7 @@ extern crate time;
 fn main() {
     let cfg = libbox::client::ClientConfig::new();
     let timestep = cfg.timestep;
+    let sim_rate = cfg.sim_rate;
     let system_planner = libbox::client::make_client_world(cfg);
     let mut game = libbox::client::ClientGame::new(system_planner, cfg);
 
@@ -25,6 +26,9 @@ fn main() {
         game.render();
         let now = time::PreciseTime::now();
         accum = accum + t.to(now); frames[i] = t.to(now); i = (i+1)%100;
+        if sim_rate < accum {
+            accum = sim_rate;
+        }
         t = now;
 
     }

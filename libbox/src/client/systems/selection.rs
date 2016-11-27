@@ -20,7 +20,6 @@ use common::resources::{Camera, CurrentSelection};
 pub struct SelectionSystem {
     last_pos: Point2<i32>, // could make this an Option but not worth it
     set_selection: bool,
-    under_cursor: Option<Entity>, // this should be fleshed out into some sort of enum
 }
 
 impl SelectionSystem {
@@ -28,7 +27,6 @@ impl SelectionSystem {
         SelectionSystem {
             last_pos: Point2::new(0, 0),
             set_selection: false,
-            under_cursor: None,
         }
     }
 
