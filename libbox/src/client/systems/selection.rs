@@ -73,7 +73,7 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         // this should really be in a build_world() function
         // but I can't figure out how to pass this without writing
         // gigantic types in the signature
-        let mut bp = ncollide::broad_phase::DBVTBroadPhase::new(0.05, true);
+        let mut bp = ncollide::broad_phase::DBVTBroadPhase::new(0.2, true);
         let square = Cuboid::new(Vector3::new(1f32, 1.0, 0.0));
         for (e, m, s) in (&entities, &movement, &mut sel).iter() {
             // clear hover
@@ -88,7 +88,6 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
 
         //let selected = self.query_world(camera.deref());
         let ray = camera.ray_from_screen(self.last_pos);
-        if self.set_selection { println!("{:?}", ray); } 
         //let ray = ncollide::query::Ray::new(Point3::new(0.0f32, 0.0, 10.0), Vector3::new(0.0f32, 0.0, -1.0));
         let mut hits = Vec::new();
         bp.interferences_with_ray(&ray, &mut hits);
@@ -124,7 +123,6 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
             Message::MouseInput(state, button) => {
                 use glium::glutin::{ElementState, MouseButton};
                 if state == ElementState::Pressed && button == MouseButton::Left {
-                    println!("got left click");
                     self.set_selection = true;
                 }
             },

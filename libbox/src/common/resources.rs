@@ -28,7 +28,7 @@ impl Camera {
         let height = cfg.window_height as f32;
         let aspect = width/height;
 
-        let position = Point3::new(0.0, 0.0, 10.0);
+        let position = Point3::new(0.0, 0.0, 50.0);
         let target = Point3::new(0.0, 0.0, 0.0);
         let view = Isometry3::look_at_rh(&position, &target, &UP);
         let persp = PerspectiveMatrix3::new(aspect, cfg.fov, 1.0, 100.0);
@@ -70,7 +70,7 @@ impl Camera {
     /// Returns a normalized ray pointing from the camera's position into the scene
     /// projected from the point clicked on the screen
     pub fn ray_from_screen(&self, p: Point2<i32>) -> Ray<Point3<f32>> {
-        let mut v = Vector4::new((2.0*p.x as f32)/self.width - 1.0, (2.0*p.y as f32)/self.height - 1.0, 1.0, 1.0);
+        let mut v = Vector4::new((2.0*p.x as f32)/self.width - 1.0, 1.0 - (2.0*p.y as f32)/self.height, 1.0, 1.0);
 
         // isometries always have inverses. perspective should as well, I think?
         v = (self.persp.as_matrix().inverse().unwrap() * self.view.inverse().unwrap().to_homogeneous() * v).normalize();

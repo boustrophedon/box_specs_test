@@ -51,14 +51,19 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
     world.register::<Movement>();
     world.register::<Selection>();
 
-    let e1 = world.create_now().with(Render::new()).with(Movement::new()).with(Selection::new()).build();
-    println!("created entity e1: {:?}", e1);
+    world.create_now().with(Render::new()).with(Movement::new()).with(Selection::new()).build();
+
+    for i in 0..50 {
+        let x = ((((17*i+73)%80)-40) as f32)/2.0;
+        let y = ((((3*i+45)%50)-25) as f32)/2.0;
+        let pos = Movement::new_pos(Point3::new(x, y, 0.0));
+        world.create_now().with(Render::new()).with(pos).with(Selection::new()).build();
+    }
 
     // start at +5, move to -5
     use nalgebra::Point3;
     let mvmnt = Movement::new_pos_target(Point3::new(5.0, 0.0, 0.0), Point3::new(-5.0, 0.0, 0.0));
-    let e2 = world.create_now().with(Render::new()).with(mvmnt).with(Selection::new()).build();
-    println!("created entity e2: {:?}", e2);
+    world.create_now().with(Render::new()).with(mvmnt).with(Selection::new()).build();
 
     world.add_resource(IsRunning(true));
     world.add_resource(Camera::new(cfg));
