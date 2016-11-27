@@ -1,15 +1,11 @@
-use std::ops::Deref;
-
-use specs::{Entity, Join, JoinIter, MessageQueue, RunArg, System};
+use specs::{Join, MessageQueue, RunArg, System};
 
 use ncollide;
 use ncollide::shape::Cuboid;
-use ncollide::bounding_volume::BoundingVolume;
 use ncollide::broad_phase::BroadPhase;
-use ncollide::query::RayCast;
 
 use nalgebra;
-use nalgebra::{Point2, Point3, Vector3};
+use nalgebra::{Point2, Vector3};
 
 use client::ClientSystemContext;
 

@@ -1,7 +1,7 @@
 use specs::Entity;
 
 use nalgebra;
-use nalgebra::{Inverse, Isometry3, Point2, Point3, Matrix4, Norm, PerspectiveMatrix3, ToHomogeneous, FromHomogeneous, Vector3, Vector4};
+use nalgebra::{Inverse, Isometry3, Point2, Point3, Matrix4, Norm, PerspectiveMatrix3, ToHomogeneous, Vector3, Vector4};
 
 use ncollide::query::Ray;
 
