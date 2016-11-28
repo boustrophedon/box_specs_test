@@ -70,7 +70,6 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         let mut bp = ncollide::broad_phase::DBVTBroadPhase::new(0.2, true);
         let square = Cuboid::new(Vector3::new(1f32, 1.0, 0.0));
         for (e, m, s) in (&entities, &movement, &mut sel).iter() {
-            // clear hover
             s.hovered = false;
 
             use ncollide::bounding_volume;
@@ -80,35 +79,38 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         }
         bp.update(&mut |a, b| *a != *b, &mut |_, _, _| { });
 
-        //let selected = self.query_world(camera.deref());
         let ray = camera.ray_from_screen(self.last_pos);
-        //let ray = ncollide::query::Ray::new(Point3::new(0.0f32, 0.0, 10.0), Vector3::new(0.0f32, 0.0, -1.0));
         let mut hits = Vec::new();
         bp.interferences_with_ray(&ray, &mut hits);
 
         let selected = hits.first().cloned().cloned();
 
         if self.set_selection {
-            if curr_sel.0.is_some() {
-                match sel.get_mut(curr_sel.0.unwrap()) {
-                    Some(s) => s.selected = false,
-                    None => (),
+            if let Some(e) = curr_sel.0 {
+                if let Some(s) = sel.get_mut(e) {
+                    s.selected = false;
                 }
             }
             curr_sel.0 = selected;
         }
-        match selected {
-            Some(e) => {
-                let selection = sel.get_mut(e).unwrap();
-                selection.hovered = true;
-                if self.set_selection { selection.selected = true; }
-            },
-            None => ()
+
+        if let Some(e) = selected {
+            let selection = sel.get_mut(e).unwrap();
+            selection.hovered = true;
+            if self.set_selection { selection.selected = true; }
         }
 
         if self.set_selection {
-            self.set_selection = false;
+            match curr_sel.0 {
+                Some(e) => msg.send(Message::EntitySelected(e)),
+                None => {
+                    let groundpos = ray.origin + (-ray.origin.z/ray.dir.z)*ray.dir;
+                    msg.send(Message::GroundSelected(Point2::new(groundpos.x, groundpos.y)));
+                }
+            }
         }
+
+        self.set_selection = false;
     }
 
     fn handle_message(&mut self, msg: &Message) {
