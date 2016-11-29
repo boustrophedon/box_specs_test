@@ -53,7 +53,7 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         let mut hits = Vec::new();
         bp.interferences_with_ray(&ray, &mut hits);
 
-        let selected = hits.first().cloned().cloned();
+        let selected = hits.last().cloned().cloned();
 
         // set current hover
         match selected {

@@ -1,3 +1,4 @@
+use nalgebra;
 use nalgebra::{Eye, Point3, Matrix4, Vector3};
 
 use specs;
@@ -37,13 +38,16 @@ pub struct Movement {
     // and let position just be an f32 in [0,1]
     // For now we just set the position to be lerped to target over time
     pub position: Point3<f32>,
+    pub speed: f32,
     pub current_path: Option<(Point3<f32>, Point3<f32>, f32)>,
 }
 
+const SPEED: f32 = 0.002; // 2 unit per s in units per ms
 impl Movement {
     pub fn new() -> Movement {
         Movement {
             position: Point3::new(0.0, 0.0, 0.0),
+            speed: 0.0,
             current_path: None,
         }
     }
@@ -51,6 +55,7 @@ impl Movement {
     pub fn new_pos(position: Point3<f32>) -> Movement {
         Movement {
             position: position,
+            speed: 0.0,
             current_path: None,
         }
     }
@@ -58,11 +63,13 @@ impl Movement {
     pub fn new_pos_target(position: Point3<f32>, target: Point3<f32>) -> Movement {
         Movement {
             position: position,
+            speed: SPEED/nalgebra::distance(&position, &target),
             current_path: Some((position, target, 0.0)),
         }
     }
 
     pub fn set_target(&mut self, target: Point3<f32>) {
+        self.speed = SPEED/nalgebra::distance(&self.position, &target);
         self.current_path = Some((self.position, target, 0.0));
     }
 }
