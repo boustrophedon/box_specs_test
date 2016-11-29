@@ -55,11 +55,15 @@ impl Movement {
         }
     }
 
-    pub fn new_pos_target(position: Point3<f32>, current_path: Point3<f32>) -> Movement {
+    pub fn new_pos_target(position: Point3<f32>, target: Point3<f32>) -> Movement {
         Movement {
             position: position,
-            current_path: Some((position, current_path, 0.0)),
+            current_path: Some((position, target, 0.0)),
         }
+    }
+
+    pub fn set_target(&mut self, target: Point3<f32>) {
+        self.current_path = Some((self.position, target, 0.0));
     }
 }
 
@@ -85,4 +89,17 @@ impl Selection {
 
 impl Component for Selection {
     type Storage = specs::VecStorage<Selection>;
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Controllable { }
+
+impl Controllable {
+    pub fn new() -> Controllable {
+        Controllable { }
+    }
+}
+
+impl Component for Controllable {
+    type Storage = specs::NullStorage<Controllable>;
 }

@@ -1,66 +1,36 @@
-use specs::{Join, MessageQueue, RunArg, System};
+use specs::{Join, MessageQueue, RunArg, System, World};
 
 use ncollide;
 use ncollide::shape::Cuboid;
 use ncollide::broad_phase::BroadPhase;
 
 use nalgebra;
-use nalgebra::{Point2, Vector3};
+use nalgebra::Vector3;
 
 use client::ClientSystemContext;
 
 use common::Message;
 use common::components::{Movement, Selection};
-use common::resources::{Camera, CurrentSelection};
+use common::resources::{Camera, CurrentHover, CurrentSelection, CursorPosition};
 
-pub struct SelectionSystem {
-    last_pos: Point2<i32>, // could make this an Option but not worth it
-    set_selection: bool,
-}
+pub struct SelectionSystem { }
 
 impl SelectionSystem {
     pub fn new() -> SelectionSystem {
-        SelectionSystem {
-            last_pos: Point2::new(0, 0),
-            set_selection: false,
-        }
+        SelectionSystem { }
     }
-
-    // fn clear_world(&mut self) {
-    //     // I wish there were a "clear" function
-    //     self.collision_bp = ncollide::broad_phase::DBVTBroadPhase::new(0.05, true);
-    // }
-
-    // fn add_to_world(&mut self, e: Entity, m: &Movement) {
-    //     use ncollide::bounding_volume::aabb;
-    //     let square = Cuboid::new(Vector3::new(0.5, 0.5, 0.0));
-    //     self.collision_bp.deferred_add(e.get_id() as usize, aabb(square, m.position), e);
-    // }
-
-    // fn query_world(&self, camera: &Camera) -> Option<Entity> {
-    //     //let ray = camera.ray_to_coords(self.last_pos);
-    //     let ray = ncollide::query::Ray::new(Point3::new(0.0, 0.0, 10.0), Vector3::new(0.0, 0.0, 1.0));
-    //     let mut hits = Vec::new();
-    //     self.collision_bp.interferences_with_ray(&ray, &mut hits);
-    //     return hits.first();
-    // }
-
-    // fn finalize_world(&mut self) {
-    //     // magic incantation that does all the adds
-    //     // to understand the closures see reference for DBVTBroadPhase
-    //     self.collision_bp.update(&mut |a, b| *a != *b, &mut |_, _, _| { });
-    // }
 }
 
 impl System<Message, ClientSystemContext> for SelectionSystem {
     fn run(&mut self, args: RunArg, msg: MessageQueue<Message>, ctx: ClientSystemContext) {
-        let (entities, movement, mut sel, camera, mut curr_sel) = args.fetch(|w| {
+        let (entities, movement, mut sel, camera, mut curr_hover, cursor) = args.fetch(|w| {
             (
                 w.entities(),
                 w.read::<Movement>(),
                 w.write::<Selection>(),
                 w.read_resource::<Camera>(),
-                w.write_resource::<CurrentSelection>()
+                w.write_resource::<CurrentHover>(),
+                w.read_resource::<CursorPosition>(),
             )
         });
 
@@ -79,49 +49,49 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         }
         bp.update(&mut |a, b| *a != *b, &mut |_, _, _| { });
 
-        let ray = camera.ray_from_screen(self.last_pos);
+        let ray = camera.ray_from_screen(cursor.0);
         let mut hits = Vec::new();
         bp.interferences_with_ray(&ray, &mut hits);
 
         let selected = hits.first().cloned().cloned();
 
-        if self.set_selection {
-            if let Some(e) = curr_sel.0 {
-                if let Some(s) = sel.get_mut(e) {
-                    s.selected = false;
-                }
+        // set current hover
+        match selected {
+            Some(e) => {
+                let selection = sel.get_mut(e).unwrap();
+                selection.hovered = true;
+                *curr_hover = CurrentHover::Entity(e);
             }
-            curr_sel.0 = selected;
-        }
 
-        if let Some(e) = selected {
-            let selection = sel.get_mut(e).unwrap();
-            selection.hovered = true;
-            if self.set_selection { selection.selected = true; }
-        }
-
-        if self.set_selection {
-            match curr_sel.0 {
-                Some(e) => msg.send(Message::EntitySelected(e)),
-                None => {
-                    let groundpos = ray.origin + (-ray.origin.z/ray.dir.z)*ray.dir;
-                    msg.send(Message::GroundSelected(Point2::new(groundpos.x, groundpos.y)));
-                }
+            None =>  {
+                let mut groundpos = ray.origin + (-ray.origin.z/ray.dir.z)*ray.dir;
+                groundpos.z = 0.0;
+                *curr_hover = CurrentHover::Ground(groundpos);
             }
         }
-
-        self.set_selection = false;
     }
 
-    fn handle_message(&mut self, msg: &Message) {
+    fn handle_message(&mut self, world: &mut World, msg: &Message) {
         match *msg {
-            Message::MouseMoved(x, y) => self.last_pos = Point2::new(x, y),
-            Message::MouseInput(state, button) => {
-                use glium::glutin::{ElementState, MouseButton};
-                if state == ElementState::Pressed && button == MouseButton::Left {
-                    self.set_selection = true;
+            Message::SelectEntity => {
+                let hover = world.read_resource::<CurrentHover>();
+                let mut curr_sel = world.write_resource::<CurrentSelection>();
+                let mut sel = world.write::<Selection>();
+
+                // current selection not selected anymore
+                if let Some(e) = curr_sel.0 {
+                    sel.get_mut(e).map(|s| s.selected = false);
                 }
-            },
+
+                // set new current selection based on hovered location
+                match *hover {
+                    CurrentHover::Entity(e) => {
+                        curr_sel.0 = Some(e);
+                        sel.get_mut(e).map(|s| s.selected = true);
+                    }
+                    _ => curr_sel.0 = None,
+                }
+            }
             _ => ()
         }
     }

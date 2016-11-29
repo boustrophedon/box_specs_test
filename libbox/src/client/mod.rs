@@ -3,6 +3,8 @@ use time::Duration;
 use specs;
 use glium;
 
+use nalgebra::Point2;
+
 mod systems;
 use self::systems::*;
 
@@ -52,14 +54,15 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
     world.register::<Render>();
     world.register::<Movement>();
     world.register::<Selection>();
+    world.register::<Controllable>();
 
-    world.create_now().with(Render::new()).with(Movement::new()).with(Selection::new()).build();
+    world.create_now().with(Render::new()).with(Movement::new()).with(Selection::new()).with(Controllable::new()).build();
 
     for i in 0..50 {
         let x = ((((17*i+73)%80)-40) as f32)/2.0;
         let y = ((((3*i+45)%50)-25) as f32)/2.0;
         let pos = Movement::new_pos(Point3::new(x, y, 0.0));
-        world.create_now().with(Render::new()).with(pos).with(Selection::new()).build();
+        world.create_now().with(Render::new()).with(pos).with(Selection::new()).with(Controllable::new()).build();
     }
 
     // start at +5, move to -5
@@ -69,7 +72,9 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
 
     world.add_resource(IsRunning(true));
     world.add_resource(Camera::new(cfg));
+    world.add_resource(CursorPosition(Point2::new(0,0)));
     world.add_resource(CurrentSelection(None));
+    world.add_resource(CurrentHover::None);
 
     let mut p = specs::Planner::new(world, 4);
     p.add_system(SelectionSystem::new(), "selection", 1);
