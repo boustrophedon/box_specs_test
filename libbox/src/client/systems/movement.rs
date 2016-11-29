@@ -1,9 +1,10 @@
-use specs::{Join, MessageQueue, RunArg, System};
+use specs::{Join, MessageQueue, RunArg, System, World};
 
 use client::ClientSystemContext;
 
 use common::Message;
-use common::components::Movement;
+use common::components::{Controllable, Movement};
+use common::resources::CurrentHover;
 
 use nalgebra::Point3;
 
@@ -38,6 +39,22 @@ impl System<Message, ClientSystemContext> for MovementSystem {
                     m.current_path = Some((begin, end, t));
                 }
             }
+        }
+    }
+
+    fn handle_message(&mut self, world: &mut World, msg: &Message) {
+        match *msg {
+            Message::InteractWith(e, ref interact) => {
+                let control = world.read::<Controllable>();
+                let mut movement = world.write::<Movement>();
+                control.get(e)
+                .and_then(|_| movement.get_mut(e))
+                .map(|m| match *interact {
+                    CurrentHover::Ground(target) => m.set_target(target),
+                    _ => (),
+                });
+            },
+            _ => (),
         }
     }
 }
