@@ -17,7 +17,7 @@ impl MovementSystem {
 }
 
 impl System<Message, ClientSystemContext> for MovementSystem {
-    fn run(&mut self, arg: RunArg, msg: MessageQueue<Message>, ctx: ClientSystemContext) {
+    fn run(&mut self, arg: RunArg, _: MessageQueue<Message>, ctx: ClientSystemContext) {
         let mut mvt = arg.fetch(|w| w.write::<Movement>());
 
         let speed = 0.001; // units per ms i.e. 1u/s

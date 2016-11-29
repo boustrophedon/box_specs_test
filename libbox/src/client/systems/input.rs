@@ -39,7 +39,7 @@ impl InputSystem {
         }
     }
 
-    pub fn handle_ingame(&mut self, event: Event, world: &mut World, msg: &MessageQueue<Message>, ctx: &ClientSystemContext) {
+    pub fn handle_ingame(&mut self, event: Event, world: &mut World, msg: &MessageQueue<Message>, _: &ClientSystemContext) {
         use glium::glutin::{ElementState, MouseButton};
         match event {
             Event::Closed => {

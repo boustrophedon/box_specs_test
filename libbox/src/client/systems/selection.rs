@@ -22,7 +22,7 @@ impl SelectionSystem {
 }
 
 impl System<Message, ClientSystemContext> for SelectionSystem {
-    fn run(&mut self, args: RunArg, msg: MessageQueue<Message>, ctx: ClientSystemContext) {
+    fn run(&mut self, args: RunArg, _: MessageQueue<Message>, _: ClientSystemContext) {
         let (entities, movement, mut sel, camera, mut curr_hover, cursor) = args.fetch(|w| {
             (
                 w.entities(),

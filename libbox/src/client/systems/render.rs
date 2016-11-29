@@ -122,7 +122,7 @@ impl RenderSystem {
             .expect("Failed to open window")
     }
 
-    pub fn run(&mut self, window: &mut Display, world: &mut World, msg: MessageQueue<Message>, ctx: ClientSystemContext) {
+    pub fn run(&mut self, window: &mut Display, world: &mut World, _: MessageQueue<Message>, _: ClientSystemContext) {
         let camera = world.read_resource::<Camera>();
 
         let mut frame = window.draw();
