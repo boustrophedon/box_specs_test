@@ -5,8 +5,6 @@ use nalgebra::{Inverse, Isometry3, Point2, Point3, Matrix4, Norm, PerspectiveMat
 
 use ncollide::query::Ray;
 
-use client::ClientConfig;
-
 #[derive(Clone, Debug)]
 pub struct IsRunning(pub bool);
 
@@ -23,15 +21,15 @@ pub struct Camera {
 
 const UP: Vector3<f32> = Vector3 {x: 0.0, y: 1.0, z: 0.0};
 impl Camera {
-    pub fn new(cfg: ClientConfig) -> Camera {
-        let width = cfg.window_width as f32;
-        let height = cfg.window_height as f32;
+    pub fn new(window_width: u32, window_height: u32, fov: f32) -> Camera {
+        let width = window_width as f32;
+        let height = window_height as f32;
         let aspect = width/height;
 
         let position = Point3::new(0.0, 0.0, 50.0);
         let target = Point3::new(0.0, 0.0, 0.0);
         let view = Isometry3::look_at_rh(&position, &target, &UP);
-        let persp = PerspectiveMatrix3::new(aspect, cfg.fov, 1.0, 100.0);
+        let persp = PerspectiveMatrix3::new(aspect, fov, 1.0, 100.0);
 
         Camera {
             position: position,

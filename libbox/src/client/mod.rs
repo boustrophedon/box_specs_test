@@ -71,7 +71,7 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
     world.create_now().with(Render::new()).with(mvmnt).with(Selection::new()).build();
 
     world.add_resource(IsRunning(true));
-    world.add_resource(Camera::new(cfg));
+    world.add_resource(Camera::new(cfg.window_width, cfg.window_height, cfg.fov));
     world.add_resource(CursorPosition(Point2::new(0,0)));
     world.add_resource(CurrentSelection(None));
     world.add_resource(CurrentHover::None);
