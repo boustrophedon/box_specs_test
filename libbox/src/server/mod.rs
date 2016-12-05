@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use time::Duration;
 
 use specs;
@@ -13,6 +15,7 @@ use common::components::*;
 pub struct ServerConfig {
     pub timestep: Duration,
     pub sim_rate: Duration,
+    pub server_address: SocketAddr,
     // data directories, etc
 }
 
@@ -21,6 +24,7 @@ impl ServerConfig {
         ServerConfig {
             timestep: Duration::milliseconds(2),
             sim_rate: Duration::milliseconds(33),
+            server_address: "127.0.0.1:8844".parse().unwrap(),
         }
     }
 }
@@ -64,6 +68,7 @@ pub fn make_server_world(cfg: ServerConfig) -> specs::Planner<Message, ServerSys
 
     let mut p = specs::Planner::new(world, 4);
     p.add_system(MovementSystem::new(), "movement", 2);
+    p.add_system(NetworkSystem::new(cfg), "network", 20);
 
     p
 }
