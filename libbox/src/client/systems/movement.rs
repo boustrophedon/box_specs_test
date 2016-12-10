@@ -1,3 +1,5 @@
+use time::Duration;
+
 use specs::{Join, MessageQueue, RunArg, System, World};
 
 use client::ClientSystemContext;
@@ -15,29 +17,37 @@ impl MovementSystem {
     pub fn new() -> MovementSystem {
         MovementSystem { }
     }
+
+    fn do_movement(&mut self, m: &mut Movement, timestep: Duration) {
+        let (begin, end, mut t) = m.current_path.unwrap();
+
+        let progress = m.speed*(timestep.num_milliseconds() as f32);
+        t += progress;
+
+        if t >= 1.0 {
+            m.position = end;
+            m.current_path = None;
+        }
+        else {
+            let new_position = lerpf32(&begin, &end, &t);
+            m.position = new_position;
+            m.current_path = Some((begin, end, t));
+        }
+    }
 }
 
 impl System<Message, ClientSystemContext> for MovementSystem {
     fn run(&mut self, arg: RunArg, _: MessageQueue<Message>, ctx: ClientSystemContext) {
         let mut mvt = arg.fetch(|w| w.write::<Movement>());
 
-        for m in (&mut mvt).iter() {
-            if m.current_path.is_some() {
-                let (begin, end, mut t) = m.current_path.unwrap();
-
-                let progress = m.speed*(ctx.dt.num_milliseconds() as f32);
-                t += progress;
-
-                if t >= 1.0 {
-                    m.position = end;
-                    m.current_path = None;
-                }
-                else {
-                    let new_position = lerpf32(&begin, &end, &t);
-                    m.position = new_position;
-                    m.current_path = Some((begin, end, t));
+        let mut accum = ctx.dt;
+        while accum > ctx.timestep {
+            for m in (&mut mvt).iter() {
+                if m.current_path.is_some() {
+                    self.do_movement(m, ctx.timestep);
                 }
             }
+            accum = accum - ctx.timestep;
         }
     }
 

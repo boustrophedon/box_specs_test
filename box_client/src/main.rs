@@ -14,24 +14,20 @@ fn main() {
     let mut frames = [time::Duration::milliseconds(0); 100];
     let mut i = 0;
 
-    // fixed timestep without interpolation
-    let mut accum = timestep;
+    let mut dt = timestep;
     let mut t = time::PreciseTime::now();
     while game.is_running() {
         game.get_input();
-        while accum >= timestep {
-            game.run();
-            accum = accum - timestep; 
-        }
+        game.run(dt);
         game.render();
         let now = time::PreciseTime::now();
-        accum = accum + t.to(now); frames[i] = t.to(now); i = (i+1)%100;
-        if sim_rate < accum {
-            accum = sim_rate;
+        dt = t.to(now); frames[i] = dt; i = (i+1)%100;
+        if sim_rate < dt {
+            dt = sim_rate;
         }
         t = now;
-
     }
+
     let mut s = time::Duration::milliseconds(0);
     for i in 0..100 {
         s = s + frames[i];

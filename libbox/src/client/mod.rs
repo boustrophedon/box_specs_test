@@ -38,12 +38,14 @@ impl ClientConfig {
 #[derive(Clone)]
 pub struct ClientSystemContext {
     pub dt: Duration,
+    pub timestep: Duration,
 }
 
 impl ClientSystemContext {
-    pub fn new(timestep: Duration) -> ClientSystemContext {
+    pub fn new(dt: Duration, timestep: Duration) -> ClientSystemContext {
         ClientSystemContext {
-            dt: timestep,
+            dt: dt,
+            timestep: timestep,
         }
     }
 }
@@ -98,7 +100,7 @@ impl ClientGame {
         let mut window = RenderSystem::new_window(cfg);
         let render = RenderSystem::new(&mut window);
 
-        let ctx = ClientSystemContext::new(cfg.timestep);
+        let ctx = ClientSystemContext::new(Duration::seconds(0), cfg.timestep);
 
         ClientGame {
             input: input,
@@ -116,7 +118,8 @@ impl ClientGame {
         self.input.run(&mut self.window, world, msg, self.ctx.clone());
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self, dt: Duration) {
+        self.ctx.dt = dt;
         self.planner.dispatch(self.ctx.clone());
         self.planner.handle_messages();
 
