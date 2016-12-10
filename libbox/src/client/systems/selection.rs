@@ -37,7 +37,7 @@ impl System<Message, ClientSystemContext> for SelectionSystem {
         // this should really be in a build_world() function
         // but I can't figure out how to pass this without writing
         // gigantic types in the signature
-        let mut bp = ncollide::broad_phase::DBVTBroadPhase::new(0.2, true);
+        let mut bp = ncollide::broad_phase::DBVTBroadPhase::new(0.05, true);
         let square = Cuboid::new(Vector3::new(1f32, 1.0, 0.0));
         for (e, m, s) in (&entities, &movement, &mut sel).iter() {
             s.hovered = false;
