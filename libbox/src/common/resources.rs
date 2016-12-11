@@ -83,7 +83,7 @@ pub struct CursorPosition(pub Point2<i32>);
 #[derive(Clone, Debug)]
 pub struct CurrentSelection(pub Option<Entity>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, RustcDecodable, RustcEncodable)]
 pub enum CurrentHover {
     Entity(Entity),
     Ground(Point3<f32>),

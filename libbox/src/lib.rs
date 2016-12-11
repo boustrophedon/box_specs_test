@@ -5,6 +5,8 @@ extern crate time;
 extern crate nalgebra;
 extern crate ncollide;
 
+extern crate rustc_serialize;
+
 mod common;
 #[cfg(feature = "client")]
 pub mod client;

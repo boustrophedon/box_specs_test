@@ -13,4 +13,5 @@ nalgebra = "0.9" # ncollide 0.10 uses nalgebra 0.9 so I have to use it for the t
 ncollide = "0.10"
 specs = { version = "0.8", git = "https://github.com/boustrophedon/specs", branch = "message_passing" }
 time = "0.1"
+rustc-serialize = "0.3"
 glium = { version = "0.15.0", optional = true }
