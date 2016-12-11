@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use time::Duration;
 
 use specs;
@@ -19,6 +21,7 @@ pub struct ClientConfig {
     pub window_width: u32,
     pub window_height: u32,
     pub fov: f32,
+    pub server_address: SocketAddr,
     // data directories, etc
 }
 
@@ -31,6 +34,7 @@ impl ClientConfig {
             window_width: 1280,
             window_height: 720,
             fov: FRAC_PI_4,
+            server_address: "127.0.0.1:8844".parse().unwrap(),
         }
     }
 }
@@ -81,6 +85,7 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
     let mut p = specs::Planner::new(world, 4);
     p.add_system(SelectionSystem::new(), "selection", 1);
     p.add_system(MovementSystem::new(), "movement", 2);
+    p.add_system(NetworkSystem::new(cfg), "network", 20);
 
     p
 }
