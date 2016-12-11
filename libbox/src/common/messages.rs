@@ -9,3 +9,16 @@ pub enum Message {
     InteractWith(Entity, CurrentHover),
     Quit,
 }
+
+#[derive(Clone, Debug)]
+pub struct Version(pub String);
+#[derive(Clone, Debug)]
+pub struct DisconnectReason(pub String);
+
+#[derive(Clone, Debug)]
+pub enum NetworkMessage {
+    GameMessage(Message),
+    Connect(Version),
+    Motd(String),
+    Disconnect(DisconnectReason),
+}
