@@ -2,7 +2,6 @@ use specs::Entity;
 
 use common::resources::{CurrentHover};
 
-// will be serializable in the future
 #[derive(Clone, Debug, RustcDecodable, RustcEncodable)]
 pub enum Message {
     SelectEntity,
