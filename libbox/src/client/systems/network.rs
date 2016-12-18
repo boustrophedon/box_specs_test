@@ -2,15 +2,14 @@ use std::io::{self, Read, Write};
 
 use std::net::TcpStream;
 
-use rustc_serialize::json;
-
 use specs::{MessageQueue, RunArg, System, World};
 
 use client::{ClientConfig, ClientSystemContext};
 
-use common::{Message, NetworkMessage, Version};
+use common::{decode_messages, Message, NetworkMessage, Version};
+use common::resources::MyClientId;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum ConnectionState {
     Connected,
     Connecting,
@@ -70,78 +69,91 @@ impl NetworkSystem {
         let stream = self.current_server.stream.as_mut().unwrap();
 
         let connect = NetworkMessage::Connect(Version(version));
-        let connect_encoded = json::encode(&connect).unwrap();
-
-        stream.write(connect_encoded.as_bytes()).unwrap();
+        let mut buf = Vec::new();
+        connect.encode_as_bytes(&mut buf);
+        stream.write(buf.as_slice()).unwrap();
     }
 
-    pub fn handle_server_message(&mut self, msgq: MessageQueue<Message>, connecting: bool) {
-        // TODO: don't call unwrap, actually handle connection errors, close, etc
-        let stream = self.current_server.stream.as_mut().unwrap();
+    pub fn handle_server_message(&mut self, mq: MessageQueue<Message>, my_id: &mut MyClientId) {
+        let mut messages_buf = String::new();
+        // need scope so stream borrow doesn't conflict with handle_message borrow
+        {
+            // TODO: don't call unwrap, actually handle connection errors, close, etc
+            let stream = self.current_server.stream.as_mut().unwrap();
 
-        let mut buf = String::new();
-        match stream.read_to_string(&mut buf) {
-            Ok(_) => (),
-            Err(error) => {
-                // apparently with nonblocking sockets, it returns WouldBlock when the read is
-                // successful?
-                if error.kind() == io::ErrorKind::WouldBlock ||
-                   error.kind() == io::ErrorKind::TimedOut {}
-                else {
-                    // actual error
-                    println!("{:?}", error);
-                    return;
-                }
-            },
-        }
-
-        if buf.len() < 1 {
-            return;
-        }
-
-        let msg: NetworkMessage;
-        match json::decode(&buf) {
-            Ok(m) => {msg = m},
-            Err(error) => {
-                println!("error decoding message: {:?}", error);
-                println!("{}", buf);
-                return;
+            match stream.read_to_string(&mut messages_buf) {
+                Ok(_) => (),
+                Err(error) => {
+                    // apparently with nonblocking sockets, it returns WouldBlock when the read is
+                    // successful?
+                    if error.kind() == io::ErrorKind::WouldBlock ||
+                       error.kind() == io::ErrorKind::TimedOut {}
+                    else {
+                        // actual error
+                        println!("{:?}", error);
+                        return;
+                    }
+                },
             }
         }
 
+		let messages_result = decode_messages(&messages_buf);
+
+		let messages: Vec<NetworkMessage>;
+		match messages_result {
+			Ok(m) => { messages = m },
+			Err(error) => {
+				println!("error decoding message from server: {:?}", error);
+				println!("{}", &messages_buf);
+				return;
+			}
+		}
+
+		for msg in messages {
+			self.handle_message(msg, my_id, &mq);
+		}
+
+    }
+
+    fn handle_message(&mut self, msg: NetworkMessage, my_id: &mut MyClientId, mq: &MessageQueue<Message>) {
         use common::NetworkMessage::*;
         match msg {
             GameMessage(message) => {
                 // ignore messages while we're still connecting
-                if connecting {
+                if self.current_server.connection_state == ConnectionState::Connecting {
                     return;
                 }
-                msgq.send(message);
+                mq.send(message);
             },
             Connect(_) => (), // only used by server
-            Motd(motd) => {
+            Connected(clientid, motd) => {
                 println!("Connected to server");
+                println!("client id: {}", clientid);
                 println!("Message of the day: {}", motd); 
+                *my_id = MyClientId::new(clientid);
                 self.current_server.connection_state = ConnectionState::Connected;
             },
             Disconnect(_) => {
                 // close connection
             }
         }
+
     }
+
 }
+
 
 impl System<Message, ClientSystemContext> for NetworkSystem {
     fn run(&mut self, arg: RunArg, msg: MessageQueue<Message>, _: ClientSystemContext) {
-        let _ = arg.fetch(|_| {});
+        let mut my_id = arg.fetch(|w| {w.write_resource::<MyClientId>()});
 
         let state = self.current_server.connection_state;
         match state {
             ConnectionState::Connected => {
-                self.handle_server_message(msg, false);
+                self.handle_server_message(msg, &mut *my_id);
             },
             ConnectionState::Connecting => {
-                self.handle_server_message(msg, true);
+                self.handle_server_message(msg, &mut *my_id);
             },
             ConnectionState::Disconnected => (),
         }

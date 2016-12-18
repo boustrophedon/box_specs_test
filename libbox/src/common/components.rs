@@ -4,6 +4,8 @@ use nalgebra::{Eye, Point3, Matrix4, Vector3};
 use specs;
 use specs::Component;
 
+use common::ClientID;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Render {
     pub model_transform: Matrix4<f32>,
@@ -98,6 +100,7 @@ impl Component for Selection {
     type Storage = specs::VecStorage<Selection>;
 }
 
+
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Controllable { }
 
@@ -110,3 +113,24 @@ impl Controllable {
 impl Component for Controllable {
     type Storage = specs::NullStorage<Controllable>;
 }
+
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ClientId(ClientID);
+
+impl ClientId {
+    pub fn new(id: ClientID) -> ClientId {
+        ClientId(id)
+    }
+}
+
+impl From<ClientID> for ClientId {
+    fn from(id: ClientID) -> ClientId {
+        ClientId::new(id)
+    }
+}
+
+impl Component for ClientId {
+    type Storage = specs::HashMapStorage<ClientId>;
+}
+

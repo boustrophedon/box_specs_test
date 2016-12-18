@@ -5,6 +5,8 @@ use nalgebra::{Inverse, Isometry3, Point2, Point3, Matrix4, Norm, PerspectiveMat
 
 use ncollide::query::Ray;
 
+use common::ClientID;
+
 #[derive(Clone, Debug)]
 pub struct IsRunning(pub bool);
 
@@ -88,4 +90,19 @@ pub enum CurrentHover {
     Entity(Entity),
     Ground(Point3<f32>),
     None,
+}
+
+#[derive(Clone, Debug)]
+pub struct MyClientId(pub Option<ClientID>);
+
+impl MyClientId {
+    pub fn new(id: ClientID) -> MyClientId {
+        MyClientId(Some(id))
+    }
+}
+
+impl From<ClientID> for MyClientId {
+    fn from(id: ClientID) -> MyClientId {
+        MyClientId::new(id)
+    }
 }

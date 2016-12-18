@@ -4,17 +4,18 @@ use std::net::{TcpListener, TcpStream};
 
 use std::num::Wrapping;
 
-use rustc_serialize::json;
+use nalgebra::Point3;
 
 use specs::{MessageQueue, RunArg, System, World};
 
 use server::{ServerConfig, ServerSystemContext};
 
-use common::{Message, NetworkMessage};
+use common::{decode_messages, Message, NetworkMessage};
+use common::ClientID;
 
 struct ClientConnection {
     pub stream: TcpStream,
-    pub client_id: u16,
+    pub client_id: ClientID,
 }
 
 impl ClientConnection {
@@ -31,7 +32,7 @@ impl ClientConnection {
 pub struct NetworkSystem {
     connected_clients: Vec<ClientConnection>, // hashmap may be better
     listener: TcpListener,
-    current_id: Wrapping<u16>,
+    current_id: Wrapping<ClientID>,
 }
 
 impl NetworkSystem {
@@ -41,7 +42,7 @@ impl NetworkSystem {
         NetworkSystem {
             connected_clients: Vec::new(),
             listener: listener,
-            current_id: Wrapping(0u16),
+            current_id: Wrapping(0),
         }
     }
 
@@ -67,10 +68,12 @@ impl NetworkSystem {
         }
     }
 
-    fn handle_incoming_messages(&mut self) {
-        let mut buf = String::new();
+    fn handle_incoming_messages(&mut self, mq: MessageQueue<Message>) {
+        let mut messages_buf = String::new();
+        let mut send_buf = Vec::new();
+
         for client in &mut self.connected_clients {
-            match client.stream.read_to_string(&mut buf) {
+            match client.stream.read_to_string(&mut messages_buf) {
                 Ok(_) => {},
                 Err(error) => {
                     // apparently with nonblocking sockets, it returns WouldBlock when the read is
@@ -85,59 +88,80 @@ impl NetworkSystem {
                 },
             }
 
-            if buf.len() < 1 {
-                continue;
-            }
+            let messages_result = decode_messages(&messages_buf); 
 
-            let msg: NetworkMessage;
-            match json::decode(&buf) {
-                Ok(m) => {msg = m},
+            let messages: Vec<NetworkMessage>;
+            match messages_result {
+                Ok(m) => { messages = m },
                 Err(error) => {
-                    println!("error decoding message: {:?}", error);
-                    println!("{}", buf);
+                    println!("error decoding message from client {}: {:?}", client.client_id, error);
+                    println!("{}", &messages_buf);
                     continue;
                 }
             }
 
-            // TODO lots of validation here, and attach client id to messages somehow
-            use common::NetworkMessage::*;
-            match msg {
-                GameMessage(_) => (),
-                Connect(version) => {
-                    if version.0.as_str() != env!("CARGO_PKG_VERSION") {
-                        println!("client {} sent wrong version string", client.client_id);
-                        // TODO send disconnect
-                    }
-                    else {
-                        println!("sending motd to client {}", client.client_id);
-                        let message = NetworkMessage::Motd("drink your ovaltine".to_owned());
-                        let message = json::encode(&message).unwrap();
-                        client.stream.write(message.as_bytes()).unwrap();
-                    }
-                },
-                Motd(_) => (),
-                Disconnect(_) => {
-                    // close connection
-                }
+            for msg in messages {
+                handle_message(msg, client, &mq, &mut send_buf);
             }
 
-            buf.clear();
+            messages_buf.clear();
+        }
+    }
 
+    fn send_game_message_to_clients(&mut self, msg: &Message) {
+        let netmsg = NetworkMessage::GameMessage(msg.clone());
+        let mut buf = Vec::new();
+        netmsg.encode_as_bytes(&mut buf);
+        for client in &mut self.connected_clients {
+            client.stream.write(buf.as_slice()).unwrap();
+        }
+    }
+
+}
+
+fn handle_message(msg: NetworkMessage, client: &mut ClientConnection, mq: &MessageQueue<Message>, send_buf: &mut Vec<u8>) {
+    // TODO lots of validation here
+    use common::NetworkMessage::*;
+    match msg {
+        GameMessage(_) => (),
+        Connect(version) => {
+            if version.0.as_str() != env!("CARGO_PKG_VERSION") {
+                println!("client {} sent wrong version string", client.client_id);
+                // TODO send disconnect
+            }
+            else {
+                println!("sending motd to client {}", client.client_id);
+
+                let netmsg = NetworkMessage::Connected(client.client_id, "drink your ovaltine".to_owned());
+                netmsg.encode_as_bytes(send_buf);
+                client.stream.write(send_buf.as_slice()).unwrap();
+                send_buf.clear();
+
+                mq.send(Message::SpawnBox(
+                         Point3::new((7*client.client_id%11) as f32, (4*client.client_id%23) as f32, 0.0), client.client_id
+                        )
+                );
+            }
+        },
+        Connected(_, _) => (),
+        Disconnect(_) => {
+            // close connection
         }
     }
 }
 
 impl System<Message, ServerSystemContext> for NetworkSystem {
-    fn run(&mut self, arg: RunArg, _: MessageQueue<Message>, _: ServerSystemContext) {
+    fn run(&mut self, arg: RunArg, mq: MessageQueue<Message>, _: ServerSystemContext) {
         let _ = arg.fetch(|_| {});
 
         self.handle_incoming_connections();
-        self.handle_incoming_messages();
+        self.handle_incoming_messages(mq);
     }
 
     fn handle_message(&mut self, _: &mut World, msg: &Message) {
-        match *msg {
-            _ => (),
-        }
+        // TODO write code that checks message variant and determine whether to send to all clients
+        // or specific ones
+        // for now we send to all
+        self.send_game_message_to_clients(msg);
     }
 }

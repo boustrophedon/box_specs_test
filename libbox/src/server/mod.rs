@@ -48,28 +48,14 @@ pub fn make_server_world(cfg: ServerConfig) -> specs::Planner<Message, ServerSys
     let mut world = specs::World::new();
 
     world.register::<Movement>();
-    world.register::<Controllable>();
-
-    world.create_now().with(Movement::new()).with(Controllable::new()).build();
-
-    for i in 0..50 {
-        let x = ((((17*i+73)%80)-40) as f32)/2.0;
-        let y = ((((3*i+45)%50)-25) as f32)/2.0;
-        let pos = Movement::new_pos(Point3::new(x, y, 0.0));
-        world.create_now().with(pos).with(Controllable::new()).build();
-    }
-
-    // start at +5, move to -5
-    use nalgebra::Point3;
-    let mvmnt = Movement::new_pos_target(Point3::new(5.0, 0.0, 0.0), Point3::new(-5.0, 0.0, 0.0));
-    world.create_now().with(mvmnt).build();
+    world.register::<ClientId>();
 
     world.add_resource(IsRunning(true));
 
     let mut p = specs::Planner::new(world, 4);
     p.add_system(MovementSystem::new(), "movement", 2);
+    p.add_system(SpawnSystem::new(cfg), "spawn", 10);
     p.add_system(NetworkSystem::new(cfg), "network", 20);
-
     p
 }
 

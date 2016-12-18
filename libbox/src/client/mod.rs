@@ -61,30 +61,19 @@ pub fn make_client_world(cfg: ClientConfig) -> specs::Planner<Message, ClientSys
     world.register::<Movement>();
     world.register::<Selection>();
     world.register::<Controllable>();
-
-    world.create_now().with(Render::new()).with(Movement::new()).with(Selection::new()).with(Controllable::new()).build();
-
-    for i in 0..50 {
-        let x = ((((17*i+73)%80)-40) as f32)/2.0;
-        let y = ((((3*i+45)%50)-25) as f32)/2.0;
-        let pos = Movement::new_pos(Point3::new(x, y, 0.0));
-        world.create_now().with(Render::new()).with(pos).with(Selection::new()).with(Controllable::new()).build();
-    }
-
-    // start at +5, move to -5
-    use nalgebra::Point3;
-    let mvmnt = Movement::new_pos_target(Point3::new(5.0, 0.0, 0.0), Point3::new(-5.0, 0.0, 0.0));
-    world.create_now().with(Render::new()).with(mvmnt).with(Selection::new()).build();
+    world.register::<ClientId>();
 
     world.add_resource(IsRunning(true));
     world.add_resource(Camera::new(cfg.window_width, cfg.window_height, cfg.fov));
     world.add_resource(CursorPosition(Point2::new(0,0)));
     world.add_resource(CurrentSelection(None));
     world.add_resource(CurrentHover::None);
+    world.add_resource(MyClientId(None));
 
     let mut p = specs::Planner::new(world, 4);
     p.add_system(SelectionSystem::new(), "selection", 1);
     p.add_system(MovementSystem::new(), "movement", 2);
+    p.add_system(SpawnSystem::new(cfg), "spawn", 10);
     p.add_system(NetworkSystem::new(cfg), "network", 20);
 
     p
